@@ -16,3 +16,8 @@ spring:
               responseUrl: "{baseUrl}/saml/SingleLogout"
             acs:
               location: "{baseUrl}/saml/SSO"
+logging:
+  level:
+    org:
+      springframework:
+        security: TRACE

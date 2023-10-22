@@ -16,11 +16,19 @@
 
 package com.sc.crmate.samlauth;
 
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.opensaml.saml.saml2.wssecurity.messaging.impl.DefaultSAML20AssertionValidationContextBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.CsrfConfigurer;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.context.SecurityContextHolderStrategy;
 import org.springframework.security.saml2.provider.service.metadata.OpenSamlMetadataResolver;
 import org.springframework.security.saml2.provider.service.registration.RelyingPartyRegistrationRepository;
 import org.springframework.security.saml2.provider.service.web.DefaultRelyingPartyRegistrationResolver;
@@ -28,68 +36,74 @@ import org.springframework.security.saml2.provider.service.web.RelyingPartyRegis
 import org.springframework.security.saml2.provider.service.web.Saml2MetadataFilter;
 import org.springframework.security.saml2.provider.service.web.authentication.Saml2WebSsoAuthenticationFilter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.logout.CookieClearingLogoutHandler;
+import org.springframework.security.web.authentication.logout.HeaderWriterLogoutHandler;
+import org.springframework.security.web.authentication.logout.SecurityContextLogoutHandler;
+import org.springframework.security.web.csrf.CsrfToken;
+import org.springframework.security.web.csrf.CsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
+import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
+import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
+import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.bind.annotation.PostMapping;
+
+import java.util.function.Supplier;
 
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
 
 	@Bean
-	SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-		OpenSaml4AuthenticationProvider authenticationProvider = new OpenSaml4AuthenticationProvider();
-		authenticationProvider.setResponseAuthenticationConverter((responseToken)->{
-			Saml2Authentication authentication = OpenSaml4AuthenticationProvider.createDefaultResponseAuthenticationConverter()
-					.convert(responseToken);
-			return processSaml2Authentication(responseToken,authentication);
-		});
+	SecurityFilterChain securityFilterChain(HttpSecurity http,
+											RelyingPartyRegistrationRepository relyingPartyRegistrationRepository) throws Exception {
+		RelyingPartyRegistrationResolver relyingPartyRegistrationResolver = new DefaultRelyingPartyRegistrationResolver(
+				relyingPartyRegistrationRepository);
+		Saml2MetadataFilter metadataFilter = new Saml2MetadataFilter(relyingPartyRegistrationResolver,
+				new OpenSamlMetadataResolver());
+		SecurityContextLogoutHandler securityContextLogoutHandler = new SecurityContextLogoutHandler();
 
+
+		HeaderWriterLogoutHandler clearSiteData = new HeaderWriterLogoutHandler(new ClearSiteDataHeaderWriter(ClearSiteDataHeaderWriter.Directive.ALL));
 		// @formatter:off
 		http
 				.authorizeHttpRequests((authorize) -> authorize
-						.requestMatchers("/error").permitAll()
+						.requestMatchers("/error", "/welcome", "/csrf").permitAll()
 						.anyRequest().authenticated()
 				)
-				.saml2Login((saml2) -> saml2.relyingPartyRegistrationRepository(relyingPartyRegistrations()))
+//				.csrf(c -> {
+//					c.disable();
+//				})
+//				.cors(cors -> cors.disable())
+				.logout(logout -> {
+//					logout.invalidateHttpSession(true);
+//					logout.logoutRequestMatcher(new AntPathRequestMatcher("/logout"));
+					logout.clearAuthentication(true);
+
+//					logout.addLogoutHandler(clearSiteData);
+					logout.deleteCookies("JSESSIONID");
+//					logout.addLogoutHandler((request, response, auth) -> {
+//						for (Cookie cookie : request.getCookies()) {
+//							String cookieName = cookie.getName();
+//							Cookie cookieToDelete = new Cookie(cookieName, null);
+//							cookieToDelete.setMaxAge(0);
+//							response.addCookie(cookieToDelete);
+//						}
+//					});
+					logout.addLogoutHandler(new SecurityContextLogoutHandler());
+//					logout.addLogoutHandler(securityContextLogoutHandler);
+//					logout.addLogoutHandler(new CookieClearingLogoutHandler("JSESSIONID"));
+					logout.logoutSuccessUrl("/welcome");
+				})
+				.exceptionHandling(exception -> {
+					exception.accessDeniedPage("/index");
+				})
+				.saml2Login(Customizer.withDefaults())
 				.saml2Logout(Customizer.withDefaults())
-				.saml2Metadata(Customizer.withDefaults());
+				.addFilterBefore(metadataFilter, Saml2WebSsoAuthenticationFilter.class);
 		// @formatter:on
 		return http.build();
 	}
 
-	private AbstractAuthenticationToken processSaml2Authentication(OpenSaml4AuthenticationProvider.ResponseToken responseToken, Saml2Authentication authentication) {
 
-		return responseToken.getToken();
-	}
 
-	private RelyingPartyRegistrationRepository relyingPartyRegistrations() {
-		RelyingPartyRegistration registration = RelyingPartyRegistrations.fromMetadataLocation("http://localhost:9090/openam/saml2/jsp/exportmetadata.jsp")
-				.assertingPartyDetails((party)->
-				{
-					party.singleSignOnServiceBinding(Saml2MessageBinding.POST);
-				})
-				.assertionConsumerServiceBinding(Saml2MessageBinding.POST)
-				.registrationId("one")
-				.build();
-		return new InMemoryRelyingPartyRegistrationRepository(registration);
-	}
-
-	@Bean
-	Saml2AuthenticationRequestResolver authenticationRequestResolver(RelyingPartyRegistrationRepository registrations) {
-
-		RelyingPartyRegistration registration = RelyingPartyRegistrations.fromMetadataLocation("http://localhost:9090/openam/saml2/jsp/exportmetadata.jsp")
-				.assertingPartyDetails((party)->
-				{
-					party.singleSignOnServiceBinding(Saml2MessageBinding.POST);
-				})
-				.assertionConsumerServiceBinding(Saml2MessageBinding.POST)
-				.registrationId("one")
-				.build();
-		RelyingPartyRegistrationRepository relyingPartyRegistrationRepository = new InMemoryRelyingPartyRegistrationRepository(registration);
-		OpenSaml4AuthenticationRequestResolver authenticationRequestResolver =
-				new OpenSaml4AuthenticationRequestResolver(relyingPartyRegistrationRepository);
-		authenticationRequestResolver.setAuthnRequestCustomizer((context) -> {
-			context.getAuthnRequest().getIssuer().setValue("https://localhost:8080/newIssuer");
-			context.getAuthnRequest().setAssertionConsumerServiceURL("https://localhost:8080/newACS");
-		});
-		return authenticationRequestResolver;
-	}
 }
