@@ -21,3 +21,6 @@ logging:
     org:
       springframework:
         security: TRACE
+http:
+  cors:
+    enabled: false

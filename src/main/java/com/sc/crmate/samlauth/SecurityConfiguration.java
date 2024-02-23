@@ -46,7 +46,11 @@ import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
 import java.util.function.Supplier;
 
 @Configuration
@@ -67,13 +71,15 @@ public class SecurityConfiguration {
 		// @formatter:off
 		http
 				.authorizeHttpRequests((authorize) -> authorize
-						.requestMatchers("/error", "/welcome", "/csrf").permitAll()
+						.requestMatchers("/error", "/welcome", "/csrf", "/email").permitAll()
 						.anyRequest().authenticated()
 				)
-//				.csrf(c -> {
-//					c.disable();
-//				})
-//				.cors(cors -> cors.disable())
+				.csrf(c -> {
+					c.disable();
+				})
+				.cors(cors -> {
+					cors.disable();
+				})
 				.logout(logout -> {
 //					logout.invalidateHttpSession(true);
 //					logout.logoutRequestMatcher(new AntPathRequestMatcher("/logout"));
@@ -104,6 +110,21 @@ public class SecurityConfiguration {
 		return http.build();
 	}
 
+
+/*	@Bean
+	public CorsConfigurationSource corsConfigurationSource() {
+		CorsConfiguration configuration = new CorsConfiguration();
+		configuration.setAllowedOrigins(Arrays.asList("*","http://localhost:3000", "http://localhost:3000/api"));
+		configuration.setAllowedMethods(Arrays.asList("HEAD", "GET", "PUT", "POST", "DELETE", "PATCH"));
+		configuration.setAllowCredentials(true);
+		//the below three lines will add the relevant CORS response headers
+		configuration.addAllowedOrigin("*");
+		configuration.addAllowedHeader("*");
+		configuration.addAllowedMethod("*");
+		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+		source.registerCorsConfiguration("/**", configuration);
+		return source;
+	}*/
 
 
 }

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.sc.crmate.samlauth.SamlauthApplicationTest
+-------------------------------------------------------------------------------
+Tests run: 1, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 5.427 s - in com.sc.crmate.samlauth.SamlauthApplicationTest

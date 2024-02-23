@@ -16,8 +16,10 @@
 
 package com.sc.crmate.samlauth;
 
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.saml2.provider.service.authentication.Saml2AuthenticatedPrincipal;
@@ -31,9 +33,12 @@ import org.springframework.security.web.header.writers.ClearSiteDataHeaderWriter
 
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.ResponseBody;
 
+import java.util.Arrays;
 import java.util.Enumeration;
 
 @Controller
@@ -43,6 +48,7 @@ public class IndexController {
 	public String index(Model model, @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal,
 						HttpServletRequest request,
 						HttpServletResponse response,
+						HttpSession httpSession,
 						CsrfToken csrfToken) {
 		String emailAddress = principal.getFirstAttribute("email");
 		System.out.println("CSRF Token Values is: " + request.getSession().getAttribute("SPRING_SECURITY_CONTEXT"));
@@ -52,10 +58,13 @@ public class IndexController {
 			System.out.println("Session attribute " + s);
 		}
 
-		System.out.println("Security token " + csrfToken.getToken());
+//		System.out.println("Security token " + csrfToken.getToken());
 		model.addAttribute("emailAddress", request.getSession().getAttribute("HttpSessionCsrfTokenRepository.CSRF_TOKEN"));
 		model.addAttribute("userAttributes", principal.getAttributes());
-		return "index";
+		httpSession.setAttribute("emailAddress", emailAddress);
+		httpSession.setAttribute("attributes", principal.getAttributes());
+
+		return "redirect:http://localhost:3000/index";
 	}
 
 	@GetMapping("/welcome")
@@ -82,5 +91,13 @@ public class IndexController {
 	public String customLogout(Authentication authentication, HttpServletRequest request, HttpServletResponse response) {
 
 		return "mylogout";
+	}
+
+
+	@GetMapping("/email")
+	@ResponseBody
+	@CrossOrigin(originPatterns = "http://localhost:3000/*" , allowCredentials = "true" , exposedHeaders = {"Access-Control-Allow-Origin","Access-Control-Allow-Credentials"})
+	public String getEmail(HttpSession httpSession) {
+		return (String) httpSession.getAttribute("emailAddress");
 	}
 }
