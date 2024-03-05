@@ -97,7 +97,6 @@ public class IndexController {
 
 	@GetMapping("/email")
 	@ResponseBody
-	@CrossOrigin(originPatterns = "http://localhost:3000/*" , allowCredentials = "true" , exposedHeaders = {"Access-Control-Allow-Origin","Access-Control-Allow-Credentials"})
 	public String getEmail(HttpSession httpSession) {
 		return (String) httpSession.getAttribute("emailAddress");
 	}
