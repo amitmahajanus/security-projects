@@ -45,6 +45,7 @@ import java.util.Enumeration;
 public class IndexController {
 
 	@GetMapping("/")
+	@ResponseBody
 	public String index(Model model, @AuthenticationPrincipal Saml2AuthenticatedPrincipal principal,
 						HttpServletRequest request,
 						HttpServletResponse response,
@@ -63,8 +64,8 @@ public class IndexController {
 		model.addAttribute("userAttributes", principal.getAttributes());
 		httpSession.setAttribute("emailAddress", emailAddress);
 		httpSession.setAttribute("attributes", principal.getAttributes());
-
-		return "redirect:http://localhost:3000/index";
+		return emailAddress;
+//		return "redirect:http://localhost:3000/index";
 	}
 
 	@GetMapping("/welcome")
