@@ -1,5 +1,7 @@
 com\sc\crmate\samlauth\IndexController.class
 com\sc\crmate\samlauth\SamlExtensionUrlForwardingFilter.class
 com\sc\crmate\samlauth\CorsConfig.class
-com\sc\crmate\samlauth\SecurityConfiguration.class
+com\sc\crmate\samlauth\SpringCacheSaml2AuthenticationRequestRepository.class
 com\sc\crmate\samlauth\SamlauthApplication.class
+com\sc\crmate\samlauth\CustomSaml2AuthenticationRequestResolver.class
+com\sc\crmate\samlauth\SecurityConfig.class
