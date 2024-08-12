@@ -2,6 +2,8 @@ package com.sc.crmate.samlauth;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.Cache;
 import org.springframework.cache.concurrent.ConcurrentMapCache;
@@ -13,21 +15,17 @@ import org.springframework.stereotype.Repository;
 import java.util.Enumeration;
 import java.util.concurrent.ConcurrentHashMap;
 @Repository
-@RequiredArgsConstructor
+@AllArgsConstructor
+@NoArgsConstructor
 public class CustomSaml2AuthenticationRequestRepository implements Saml2AuthenticationRequestRepository<AbstractSaml2AuthenticationRequest> {
-    private final Cache cache = new ConcurrentMapCache("samlrequests");
+    private Cache cache = new ConcurrentMapCache("samlrequests");
+
     @Override
     public AbstractSaml2AuthenticationRequest loadAuthenticationRequest(HttpServletRequest request) {
         String relayState = request.getParameter(Saml2ParameterNames.RELAY_STATE);
         System.out.println("Fetching saml2 auth request by relay stage " + relayState);
         if(null == relayState) {
             return null;
-        }
-        Enumeration<String> params = request.getParameterNames();
-        System.out.println(request.getRequestId());
-        while(params.hasMoreElements()) {
-            String p = params.nextElement();
-            System.out.println(request.getParameter(p));
         }
         System.out.println("Fetching saml2 auth request by relay stage " + relayState);
         AbstractSaml2AuthenticationRequest authenticationRequest = this.cache.get(relayState, AbstractSaml2AuthenticationRequest.class);
