@@ -15,7 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Repository
 @RequiredArgsConstructor
 public class CustomSaml2AuthenticationRequestRepository implements Saml2AuthenticationRequestRepository<AbstractSaml2AuthenticationRequest> {
-    private final Cache cache = new ConcurrentMapCache("authentication-requests");
+    private final Cache cache = new ConcurrentMapCache("samlrequests");
     @Override
     public AbstractSaml2AuthenticationRequest loadAuthenticationRequest(HttpServletRequest request) {
         String relayState = request.getParameter(Saml2ParameterNames.RELAY_STATE);
